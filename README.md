@@ -1,43 +1,42 @@
 # Feeds2Gmail
 
-Similar to [RSS2Email][], but:
+Similar to the venerable rss2email, but:
 
 1. Creates emails directly in your Gmail account using IMAP
-APPEND. This has a number of advantages over sending emails:
+    APPEND. This has a number of advantages over sending emails:
 
-- Faster.
+    - Faster.
 
-- No chance to be flagged as Spam.
+    - No chance to be flagged as Spam.
 
-- No other deliverability issues.
+    - No other deliverability issues.
 
-- Can place directly in appropriate mailbox (a.k.a. folder
-  a.k.a. label). Speaking of which...
+    - Can place directly in appropriate mailbox (a.k.a. folder
+      a.k.a. label). Speaking of which...
 
 2. Each email is put in two IMAP mailboxes -- in Gmail, that means it
-is tagged with two labels -- `Feeds` and `Feeds/<feed-name>`.
-
-This way, you can read a mix of feeds, or, focus on posts from just
-one feed. Much like you could in Google Reader.
+    is tagged with two labels -- `Feeds` and `Feeds/<feed-name>`.
+    This way, you can read a mix of feeds, or, focus on posts from just
+    one feed. Much like you could in Google Reader.
 
 3. Obviously IMAP means you can read feeds on multiple devices, and
-they'll stay in sync:
+    they'll stay in sync:
 
-- The posts.
+    - The posts.
 
-- Which posts you've read.
+    - Which posts you've read.
 
-- Which posts you've starred.
+    - Which posts you've starred.
 
-Editorial: This works so well, it makes you wonder why Google didn't
-add this to Gmail. It could make one suspect that this was never
-really about the viability of Google Reader; instead, a desire to kill
-RSS and Atom feeds in favor of proprietary monocultures like Twitter,
-Facebook, and maybe oh say Google+.
+    Editorial: This works so well, it makes you wonder why Google didn't
+    add this to Gmail. It could make one suspect that this was never
+    really about the viability of Google Reader; instead, a desire to kill
+    RSS and Atom feeds in favor of proprietary monocultures like Twitter,
+    Facebook, and maybe oh say Google+.
 
 4. Written in Racket rather than in Python.
 
-Note: I _almost_ got this working as a Google Apps Script. That would
+> Note: I _almost_ got this working as a Google Apps Script. That would
 have let this run using GAS scheduling, without you having to schedule
 run it on some computer of your own. The hitch?  There is nothing like
 IMAP APPEND (letting you specify a folder) available in the Google
