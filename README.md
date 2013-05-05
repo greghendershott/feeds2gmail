@@ -57,14 +57,16 @@ monocultures like Twitter, Facebook, and maybe oh say Google+.
 
 This requires Racket 5.3.4 because the `net/imap` `imap-append`
 function was updated to take an optional list of flags. We need this
-so we can set the flags to '(), rather than the default '(\Seen), and
-have the post emails should up as unread rather than read.
+so we can set the flags to `'()`, rather than the default `'(\Seen)`;
+that way the post emails appear as unread rather than read.
 
 This requires `#lang rackjure` and `http` packages not supplied with
 Racket. To install:
 
+```sh
 $ raco pkg install rackjure
 $ raco pkg install http
+```
 
 # Configure
 
@@ -75,11 +77,19 @@ email = <you>@gmail.com
 password = <password>
 ```
 
-# Feeds
+# Adding feeds
 
-Run this with the `--import-feeds <file>` flag to add feeds from
-_file_, which should have one feed URI per line. URIs must be a full
-URI including scheme, e.g. `http://www.example.com` not just
+## Add one
+
+Run with `--add-feed <feed-uri>` to add a single feed. URIs must be a
+full URI including scheme, e.g. `http://www.example.com` not just
+`www.example.com`.
+
+## Import many
+
+Run with the `--import-feeds <file>` flag to add feeds from _file_,
+which should have one feed URI per line. URIs must be a full URI
+including scheme, e.g. `http://www.example.com` not just
 `www.example.com`.
 
 # Environment
@@ -87,7 +97,7 @@ URI including scheme, e.g. `http://www.example.com` not just
 I run this on Amazon EC2 using Amazon Linux 64-bit using the Racket
 build for Fedora 12 x64. The crontab runs it `@hourly`.
 
-# Gmail not IMAP
+# Why Gmail not IMAP?
 
 I coded this to be Gmail-specific because that seems like the main use
 case -- people wanting a Google Reader replacment. However there's
