@@ -12,6 +12,6 @@
     (match x
       [(pregexp "^email\\s*=\\s*(\\S+)\\s*$" (list _ s)) (user s)]
       [(pregexp "^password\\s*=\\s*(\\S+)\\s*$" (list _ s)) (pwd s)]
-      [else (void)])))
+      [_ (void)])))
 
 (read-config)

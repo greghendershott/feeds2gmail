@@ -38,7 +38,7 @@
                 (~> (read-entity/transfer-decoding-port in h)
                     read-xml->xexpr
                     (parse-feed uri (extract-field "Last-Modified" h))))]
-         [else #f])))))
+         [_ #f])))))
 
 (define (read-xml->xexpr in) ;; input-port? -> xexpr?
   (define (remove-whitespace x)
@@ -53,7 +53,7 @@
     [(cdata (location _ _ _)
             (location _ _ _)
             (pregexp "^<!\\[CDATA\\[(.*)\\]\\]>$" (list _ s))) s]
-    [else x]))
+    [_ x]))
 
 (module+ test
   (check-equal?
@@ -102,7 +102,7 @@
       (match xs
         [(list-no-order `(title (,_ ...) ,ss ...) _ ...)
          (->plain-string ss)]
-        [else ""])
+        [_ ""])
       last-mod
       (filter-non-#f/reverse
        (for/list ([x xs])
@@ -124,10 +124,10 @@
                               ,contents ...))
                 _ ...)
                (feed-item* id date titles hrefs contents type)]
-              [else (displayln "Bad Atom entry")
-                    ;;(pretty-print x)
-                    #f])]
-           [else #f]))))]
+              [_ (displayln "Bad Atom entry")
+                 ;;(pretty-print x)
+                 #f])]
+           [_ #f]))))]
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; RSS?
     [`(rss ,as ...
@@ -136,7 +136,7 @@
       (match xs
         [(list-no-order `(title (,_ ...) ,ss ...) _ ...)
          (->plain-string ss)]
-        [else ""])
+        [_ ""])
       last-mod
       (filter-non-#f/reverse
        (for/list ([x xs])
@@ -152,16 +152,16 @@
                (define pub
                  (match xs
                    [(list-no-order `(pubDate () ,s) _ ...) s]
-                   [else "unspecified"]))
+                   [_ "unspecified"]))
                (define id
                  (match xs
                    [(list-no-order `(guid () ,s) _ ...) s]
-                   [else (~> (->html-string contents) open-input-string sha1)]))
+                   [_ (~> (->html-string contents) open-input-string sha1)]))
                (feed-item* id pub titles hrefs contents "html")]
-              [else (printf "Bad RSS item\n")
-                    ;; (pretty-print x)
-                    #f])]
-           [else #f]))))]
+              [_ (printf "Bad RSS item\n")
+                 ;; (pretty-print x)
+                 #f])]
+           [_ #f]))))]
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; RDF?
     [`(rdf:RDF ([,_ ,_] ...)
@@ -186,18 +186,18 @@
                (define pub
                  (match xs
                    [(list-no-order `(pubDate () ,s) _ ...) s]
-                   [else "unspecified"]))
+                   [_ "unspecified"]))
                (define id
                  (match xs
                    [(list-no-order `(guid () ,s) _ ...) s]
-                   [else (~> (->html-string contents) open-input-string sha1)]))
+                   [_ (~> (->html-string contents) open-input-string sha1)]))
                (feed-item* id pub titles hrefs contents "html")]
-              [else (printf "Bad RDF item\n")
-                    ;; (pretty-print x)
-                    #f])]
-           [else #f]))))]
+              [_ (printf "Bad RDF item\n")
+                 ;; (pretty-print x)
+                 #f])]
+           [_ #f]))))]
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; ???
-    [else (printf "Not an Atom, RSS, or RDF feed: ~a\n" uri)
-          ;; (pretty-print x)
-          (fetched-feed "Unknown" last-mod '())]))
+    [_ (printf "Not an Atom, RSS, or RDF feed: ~a\n" uri)
+       ;; (pretty-print x)
+       (fetched-feed "Unknown" last-mod '())]))

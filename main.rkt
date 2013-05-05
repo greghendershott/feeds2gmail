@@ -66,7 +66,7 @@
   (define ct (match (feed-item-content-type item)
                [(or "html" "xhtml") "text/html"]
                ["text" "text/plain"]
-               [else "text/plain"]))
+               [_ "text/plain"]))
   (define s 
     (str "Date: " (feed-item-date item) "\r\n"
          "From: \"" mailbox "\" <x@example.com>\r\n"
@@ -81,7 +81,7 @@
                (format "<html>~a<p><a href=\"~a\">Original</a>.</p></html>"
                        x
                        (feed-item-link item))]
-              [else
+              [_
                (format "~a<p><a href=\"~a\">Original</a>.</p>"
                        (feed-item-content item)
                        (feed-item-link item))])]
