@@ -63,13 +63,16 @@
 
 (define (email imap mailbox item)
   ;; Format the email message
+  (define from (match mailbox
+                 [(pregexp "^Feeds/(.+?)$" (list _ x)) x]
+                 [_ mailbox]))
   (define ct (match (feed-item-content-type item)
                [(or "html" "xhtml") "text/html"]
                ["text" "text/plain"]
                [_ "text/plain"]))
   (define s 
     (str "Date: " (feed-item-date item) "\r\n"
-         "From: \"" mailbox "\" <x@example.com>\r\n"
+         "From: \"" from "\" <x@example.com>\r\n"
          "To: " (user) "\r\n"
          "Subject: " (feed-item-title item) "\r\n"
          "Content-Type: " ct "\r\n"
@@ -182,4 +185,3 @@
        "Each URI must start with the scheme ('http:' or 'https:').")
       (--import-feeds /path/to/file)])
     (exit 0)))
-  
