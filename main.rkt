@@ -64,7 +64,8 @@
 (define (email imap mailbox item)
   ;; Format the email message
   (define from (match mailbox
-                 [(pregexp "^Feeds/(.+?)$" (list _ x)) x]
+                 [(pregexp (str "^" (regexp-quote (feeds-mailbox)) "/(.+?)$")
+                           (list _ x)) x]
                  [_ mailbox]))
   (define ct (match (feed-item-content-type item)
                [(or "html" "xhtml") "text/html"]
