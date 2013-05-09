@@ -16,8 +16,9 @@
 (struct fetched-feed (title last-mod items))
 (struct feed-item (uri id date title link content content-type))
 
-(define/contract (get-feed uri [last-mod #f])
-  ((string?) ((or/c #f string?)) . ->* . (or/c #f fetched-feed?))
+(define/contract (get-feed uri [last-mod #f][u-a #f])
+  ((string?) ((or/c #f string?) (or/c #f string?))
+   . ->* . (or/c #f fetched-feed?))
   (with-handlers ([exn:fail? (lambda (exn)
                                (displayln uri) 
                                (displayln (exn-message exn))
@@ -26,6 +27,7 @@
     (call/input-request ;;this handles 301 302 redirects automatically
      "1.0" "GET" uri
      {'Connection: "close"
+      'User-Agent: (or u-a "https://github.com/greghendershott/feeds2gmail")
       'If-Modified-Since (or last-mod "")
       'Content-Type "application.xml"}
      (lambda (in h)
