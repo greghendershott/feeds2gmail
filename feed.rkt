@@ -201,3 +201,18 @@
     [_ (printf "Not an Atom, RSS, or RDF feed: ~a\n" uri)
        ;; (pretty-print x)
        (fetched-feed "Unknown" last-mod '())]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(module+ test
+  (require rackunit)
+  (define ff (get-feed "https://pkg.racket-lang.org/rss"))
+  (check-not-false ff)
+  (when ff
+    ;; Expected feed title
+    (check-equal? (~> ff fetched-feed-title) "Racket Package Updates")
+    ;; Had some items
+    (check-true (not (zero? (~> ff fetched-feed-items length))))))
+
+;; TO-DO: Get some static XML files, and run them through parse-feed
+;; for unit tests.
