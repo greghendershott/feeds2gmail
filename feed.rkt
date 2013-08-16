@@ -26,8 +26,8 @@
     (printf "~a ... " uri)
     (call/input-request ;;this handles 301 302 redirects automatically
      "1.0" "GET" uri
-     {'Connection: "close"
-      'User-Agent: (or u-a "https://github.com/greghendershott/feeds2gmail")
+     {'Connection "close"
+      'User-Agent (or u-a "https://github.com/greghendershott/feeds2gmail")
       'If-Modified-Since (or last-mod "")
       'Content-Type "application.xml"}
      (lambda (in h)
