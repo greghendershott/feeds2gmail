@@ -109,7 +109,7 @@
       (filter-non-#f/reverse
        (for/list ([x xs])
          (match x
-           [`(entry () ,xs ...)
+           [`(entry ([,_ ,_] ...) ,xs ...)
             (match xs
               [(list-no-order
                 `(id ([,_ ,_] ...) ,id)
