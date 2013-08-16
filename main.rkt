@@ -9,134 +9,7 @@
 (module+ test
   (require rackunit))
 
-(define (update imap)
-  (~> (load-feeds)
-      (update-feeds imap)
-      save-feeds
-      void))
-
-(define imap-path-delim (make-parameter "/"))
-
-(define (update-feeds feeds imap)
-  (parameterize ([imap-path-delim (imap-get-hierarchy-delimiter imap)])
-    (for/fold ([feeds feeds])
-              ([(uri feed) (in-hash feeds)])
-      (define x (get-feed uri (feed-mod feed)))
-      (cond [x (for/fold ([feeds (set-feed-mod feeds uri
-                                               (fetched-feed-last-mod x))])
-                          ([item (in-list (fetched-feed-items x))])
-                 (define id (feed-item-id item))
-                 (define dt (feed-item-date item))
-                 (cond [(have-post? feeds uri id dt) feeds]
-                       [else (email imap (feed-mailbox feed) item)
-                             (~> (add-post feeds uri id dt)
-                                 save-feeds)]))]
-            [else feeds]))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define (valid-mailbox-name name)
-  (~> (match name [(pregexp "^\\s*(.+?)\\s*$" (list _ s)) s])
-      (regexp-replaces
-       `((#px"[^-A-Za-z0-9.,?:'\"()| ]" "")
-         (,(imap-path-delim) "")
-         (#px"[ ]{2,}" " ")))))
-
-(module+ test
-  (check-equal? (valid-mailbox-name " Foo ")
-                "Foo")
-  (check-equal? (valid-mailbox-name " stratēchery ")
-                "stratchery"))
-
-(define (child->full child)
-  (str (feeds-mailbox)
-       (imap-path-delim)
-       child))
-
-(module+ test
-    (parameterize ([feeds-mailbox "Feeds"]
-                   [imap-path-delim "/"])
-      (check-equal? (child->full "Foo")
-                  "Feeds/Foo")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define (email imap mailbox item)
-  ;; Format the email message
-  (define from (match mailbox
-                 [(pregexp (str "^" (regexp-quote (feeds-mailbox)) "/(.+?)$")
-                           (list _ x)) x]
-                 [_ mailbox]))
-  (define ct (match (feed-item-content-type item)
-               [(or "html" "xhtml") "text/html"]
-               ["text" "text/plain"]
-               [_ "text/plain"]))
-  (define s 
-    (str "Date: " (feed-item-date item) "\r\n"
-         "From: \"" from "\" <x@example.com>\r\n"
-         "To: " (user) "\r\n"
-         "Subject: " (feed-item-title item) "\r\n"
-         "Content-Type: " ct "\r\n"
-         "\r\n"
-         (match ct
-           ["text/html"
-            (match (feed-item-content item)
-              [(pregexp "<html>(.*)</html>" (list _ x))
-               (format "<html>~a<p><a href=\"~a\">Original</a>.</p></html>"
-                       x
-                       (feed-item-link item))]
-              [_
-               (format "~a<p><a href=\"~a\">Original</a>.</p>"
-                       (feed-item-content item)
-                       (feed-item-link item))])]
-           ["text/plain" (str  (feed-item-content item) "\r\n"
-                               "Original: <" (feed-item-link item) ">\r\n")])))
-  (when (send-email?)
-    (define (send imap mailbox msg)
-      (void (imap-get-expunges imap)) ;required, although docs don't say so
-      (imap-append imap mailbox msg '())) ;do NOT use default \Seen
-    ;; 1. Parent Feeds mailbox
-    (send imap (feeds-mailbox) s)
-    ;; 2. Child per-feed mailbox
-    (send imap mailbox s)
-    (printf "New: \"~a\"\n" (feed-item-title item))))
-                 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define (--update)
-  (with-gmail-imap update))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Note: If feed already exists, this will erase all history for it!
-(define (--add-feed uri)
-  (define f (get-feed uri))
-  (when f
-    (define mailbox (~> f fetched-feed-title valid-mailbox-name child->full))
-    (with-gmail-imap (lambda (imap)
-                       ;; 1. Create parent Feeds mailbox
-                       (idempotent-create-mailbox imap (feeds-mailbox))
-                       ;; 2. Create child per-feed mailbox
-                       (idempotent-create-mailbox imap mailbox)))
-    (~> (load-feeds)
-        (add-feed uri mailbox)
-        save-feeds
-        (void))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Import feed URIs from file, one per line.
-(define (--import-feeds file)
-  (for ([uri (file->lines file)])
-    (--add-feed uri)))
-
-;; TO-DO: Import OPML files?
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; Parameters for command-line options
-
 (define send-email? (make-parameter #t))
 (define feeds-mailbox (make-parameter "Feeds"))
 
@@ -186,3 +59,91 @@
        "Each URI must start with the scheme ('http:' or 'https:').")
       (--import-feeds /path/to/file)])
     (exit 0)))
+
+(define (--update)
+  (with-gmail-imap update))
+
+;; Note: If feed already exists, this will erase all history for it!
+(define (--add-feed uri)
+  (define f (get-feed uri))
+  (when f
+    (define mailbox (~> f fetched-feed-title valid-mailbox-name
+                        (child->full (feeds-mailbox))))
+    (with-gmail-imap (lambda (imap)
+                       ;; 1. Create parent Feeds mailbox
+                       (idempotent-create-mailbox imap (feeds-mailbox))
+                       ;; 2. Create child per-feed mailbox
+                       (idempotent-create-mailbox imap mailbox)))
+    (~> (load-feeds)
+        (add-feed uri mailbox)
+        save-feeds
+        (void))))
+
+;; Import feed URIs from file, one per line.
+(define (--import-feeds file)
+  (for ([uri (file->lines file)])
+    (--add-feed uri)))
+
+;; TO-DO: Import OPML files?
+
+(define (update imap)
+  (~> (load-feeds)
+      (update-feeds imap)
+      save-feeds
+      void))
+
+(define (update-feeds feeds imap)
+  (parameterize ([imap-path-delim (imap-get-hierarchy-delimiter imap)])
+    (for/fold ([feeds feeds])
+              ([(uri feed) (in-hash feeds)])
+      (define x (get-feed uri (feed-mod feed)))
+      (cond [x (for/fold ([feeds (set-feed-mod feeds uri
+                                               (fetched-feed-last-mod x))])
+                          ([item (in-list (fetched-feed-items x))])
+                 (define id (feed-item-id item))
+                 (define dt (feed-item-date item))
+                 (cond [(have-post? feeds uri id dt) feeds]
+                       [else (email imap (feed-mailbox feed) item)
+                             (~> (add-post feeds uri id dt)
+                                 save-feeds)]))]
+            [else feeds]))))
+
+(define (email imap mailbox item)
+  (printf "New: \"~a\"\n" (feed-item-title item))
+  ;; Format the email message
+  (define from (match mailbox
+                 [(pregexp (str "^" (regexp-quote (feeds-mailbox)) "/(.+?)$")
+                           (list _ x)) x]
+                 [_ mailbox]))
+  (define ct (match (feed-item-content-type item)
+               [(or "html" "xhtml") "text/html"]
+               ["text" "text/plain"]
+               [_ "text/plain"]))
+  (define s 
+    (str "Date: " (feed-item-date item) "\r\n"
+         "From: \"" from "\" <x@example.com>\r\n"
+         "To: " (user) "\r\n"
+         "Subject: " (feed-item-title item) "\r\n"
+         "Content-Type: " ct "\r\n"
+         "\r\n"
+         (match ct
+           ["text/html"
+            (match (feed-item-content item)
+              [(pregexp "<html>(.*)</html>" (list _ x))
+               (format "<html>~a<p><a href=\"~a\">Original</a>.</p></html>"
+                       x
+                       (feed-item-link item))]
+              [_
+               (format "~a<p><a href=\"~a\">Original</a>.</p>"
+                       (feed-item-content item)
+                       (feed-item-link item))])]
+           ["text/plain" (str  (feed-item-content item) "\r\n"
+                               "Original: <" (feed-item-link item) ">\r\n")])))
+  (when (send-email?)
+    (define (send imap mailbox msg)
+      (void (imap-get-expunges imap)) ;required, although docs don't say so
+      (imap-append imap mailbox msg '())) ;do NOT use default \Seen
+    ;; 1. Parent Feeds mailbox
+    (send imap (feeds-mailbox) s)
+    ;; 2. Child per-feed mailbox
+    (send imap mailbox s)))
