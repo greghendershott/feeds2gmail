@@ -55,10 +55,20 @@ monocultures like Twitter, Facebook, and maybe oh say Google+.
 
 # Install
 
-This requires Racket 5.3.4 because the `net/imap` `imap-append`
-function was updated to take an optional list of flags. We need this
-so we can set the flags to `'()`, rather than the default `'(\Seen)`;
-that way the post emails appear as unread rather than read.
+## Dev build of Racket
+
+The `imap-append` function from Racket's `net/imap` module was updated
+to take an optional list of IMAP flags. We need this so we can set
+the flags to `'()`, rather than the default `'(\Seen)` --- that way
+the new emails appear as unread rather than read.
+
+This enhanced `imap-append` is **not yet in the 5.3.6 release version
+of Racket**. As a result, you must use the pre-release, development
+version of Racket. You can either
+[build Racket from source](https://github.com/plt/racket) or
+[install a nightly build of Racket](http://pre.racket-lang.org/installers/).
+
+## Packages
 
 This requires `#lang rackjure` and `http` packages not supplied with
 Racket. To install:
